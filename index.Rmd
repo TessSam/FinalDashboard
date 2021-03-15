@@ -4,16 +4,18 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
+    source_code: https://github.com/TessSam/EDLD652final_project
 ---
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
 ```
-
+Plot1
+===============================
 Column {data-width=650}
 -----------------------------------------------------------------------
 
-### Chart A
+### 1st Iteration
 
 ```{r}
 
@@ -22,15 +24,66 @@ Column {data-width=650}
 Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Chart B
+### 2nd Iteration
 
 ```{r}
 
 ```
 
-### Chart C
+### 3rd Iteration
 
 ```{r}
 
 ```
 
+Plot2
+===============================
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### 1st Iteration
+
+```{r}
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### 2nd Iteration
+
+```{r}
+
+```
+
+### 3rd Iteration
+
+```{r}
+
+```
+
+Plot3
+===============================
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### 1st Iteration
+
+```{r}
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### 2nd Iteration
+
+```{r}
+
+```
+
+### 3rd Iteration
+
+```{r}
+
+```
