@@ -9,6 +9,101 @@ output:
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
+library(gganimate)#might not use
+library(forcats)
+library(ungeviz)
+library(broom.mixed)
+library(here)
+library(rio)
+#library(foreign)#importing data from spss
+library(tidyverse)
+library(gridExtra)#
+library(lme4) #glm mixed effects
+library(RColorBrewer) 
+library(corrplot) #graphical display of a correlation matrix, confidence interval
+library(gee) #Generalized estimation equation,
+library(ez) #factorial analysis stuff
+library(effects) #displaying of linear model effects
+
+#cb friendly palette using black
+#cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+```
+
+```{r P1_data_organization, include=FALSE}
+# Stage1 - Data Loading and Organization
+#=============================================================
+
+# READING FILES
+#Beh_text <- read.delim('LetDriftGo_expcCue_BehP.txt', header=TRUE, fill=TRUE)
+Beh_text <- import(here::here("LetDriftGo_expcCue_BehP.txt"))
+
+ds<-Beh_text;
+head(ds)
+
+#scramble ds RT just incase I cant use raw lab data
+# set.seed(009)
+# RT <- sample(nrow(ds))
+# scramble <- ds[RT,]
+
+#Add trial grouping variable 
+ds$BTRIAL = (max(ds$TRIAL)*ds$BLOCK-1)+ds$TRIAL
+
+#Add category for correct answer(1)
+ds$Category <- ds$CATEGORY;
+ds$Category[ds$Category==2] <- 0;
+ds$Category<-as.integer(ds$Category)
+
+# # Cue-driven expectancy context, valid if expectation cue is consistant with correct trial axis group it is valid, if not it is invalid  
+#recode cuetype values to fit b value for adaptive gain model
+ds$CUETYPE<-dplyr::recode(ds$CUETYPE, `1` = "valid", `0` = "invalid")#
+ds$CUECATb<-ds$CUECAT;
+#t1 and -1 distinction necessary for calculating cue evidence compatability Ck value in model
+ds$CUECATb[ds$CUECATb==2] <- -1
+
+# Checks for correct variable creation 
+head(ds$CUECAT)
+head(ds$CUECATb)
+
+# Checking
+#any(ds$CUECAT[ds$DVCP2CUE_1==1]==ds$DVCAT_1[ds$DVCP2CUE_1==1])
+
+# #Evidence-driven expectancy
+# Factorize for model input
+cols<-colnames(ds)
+cols<-cols[grepl("DVCP2CUE",cols)]
+ds[cols] <- lapply(ds[cols], factor)
+
+# Exclude subjects(cant remember why, probably not paying attention)
+ds<-subset(ds,SUBID!=228 & SUBID!=231)
+
+
+# PGROUP (1 = high performer 0 = low performer, median, may have had to do this as subject numbers were low)
+# median split data for high and low perfamnace subject distinction 
+ds<-ds%>%
+  group_by(SUBID)%>%
+    summarize(ACC=mean(ACC))%>%
+      mutate(PGROUP=as.numeric(ACC>median(ACC)))%>%
+        dplyr::select(c(SUBID,PGROUP))%>%
+          left_join(ds,by=("SUBID"))
+
+##Datavis plot 1
+## Stage2-Behavior Analysis ( mean aggregate of accuracy by cuetype)
+
+#Aggregated mean for accuracy by cuetype 
+# ACC:Cue efffect
+acc_exp<-ds %>% 
+  group_by(SUBID,CUETYPE) %>% 
+    summarise(ACC=mean(ACC))
+      
+#df for plotting mean and error bars 
+sumacc <- acc_exp %>% 
+  group_by(CUETYPE) %>%
+    summarise_each(funs(mean,se=sd(.)/sqrt(n())),ACC) %>% 
+  #dont know if this fixed it but it workds
+      rename(ACC = mean) %>%
+        group_by(CUETYPE)
+        #as.data.frame()
+
 ```
 Plot1
 ===============================
@@ -41,6 +136,35 @@ Column {data-width=350}
 
 ```
 
+```{r P2_data_organization, include=FALSE}
+## Plot2
+## group individual accuracy by expectation cue category
+
+# Aggregate and run ANOVA, get eta sq for the scatterplot
+agg<-aggregate(ACC~SUBID+CUETYPE, data = ds, mean);
+ezANOVA(agg, dv=ACC, wid = SUBID,within=CUETYPE)
+
+# RT:Cue effect, not using 
+rt_exp<-ds %>% 
+  group_by(SUBID,CUETYPE) %>% #group subject ID and expectation cuetype 
+    summarise(RT=mean(RT))%>% 
+      group_by(CUETYPE) %>% 
+        summarise_each(funs(mean, se=sd(.)/sqrt(n())),RT)
+
+# Check individual accuracy, for each subject average cuetype specific accuracy
+acc_ind<-ds %>% 
+  group_by(SUBID,CUETYPE) %>% 
+    summarise(ACC=mean(ACC));print(acc_ind) 
+
+
+# pivot_wider and ggplot(fantastic), tips from Raleigh
+# create df with valid and invalid RT columns
+acc_ind_wide <- acc_ind %>%
+  pivot_wider(names_from = CUETYPE, values_from = ACC)
+
+
+```
+
 Plot2
 ===============================
 Plot2 Notes {.sidebar}
@@ -70,6 +194,79 @@ Column {data-width=350}
 ### 3rd Iteration
 
 ```{r}
+
+```
+
+```{r P3_data_organization, include=FALSE}
+## Stage3-Modeling (Datavis plot3)
+#================================================================
+
+# DV normal
+m2_log_y=glmer(PCARD~1+DV_1+DV_2+DV_3+DV_4+(1|SUBID),family=binomial,data=ds)
+# m2_log_o=glmer(PCARD~1+DV_1+DV_2+DV_3+DV_4+(1|SUBID),family=binomial,data=ds_old)
+summary(m2_log_y)
+
+
+# DV expected (element-wise focusing on matching trials!)
+# DVCP2CUE (0=incongruent 1 = congruent)
+m2_expcmp=glmer(PCARD~1+(DV_1*DVCP2CUE_1+DV_2*DVCP2CUE_2+DV_3*DVCP2CUE_3+DV_4*DVCP2CUE_4)+(1|SUBID),family=binomial,data=ds)
+summary(m2_expcmp)
+
+#Mixed effects for valid
+m2_expcmp_v=glmer(PCARD~1+(DV_1*DVCP2CUE_1+DV_2*DVCP2CUE_2+DV_3*DVCP2CUE_3+DV_4*DVCP2CUE_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="valid"))
+summary(m2_expcmp_v)
+
+#Mixed effects for invalid
+m2_expcmp_iv=glmer(PCARD~1+(DV_1*DVCP2CUE_1+DV_2*DVCP2CUE_2+DV_3*DVCP2CUE_3+DV_4*DVCP2CUE_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="invalid"))
+summary(m2_expcmp_iv)     
+
+
+# DV expected (element-wise focusing on matching trials!) 2-way interactions
+# DVCP2CUE (0=incongruent 1 = congruent)
+m2_expcmp=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(DV_1:DVCP2CUE_1+DV_2:DVCP2CUE_2+DV_3:DVCP2CUE_3+DV_4:DVCP2CUE_4)+(1|SUBID),family=binomial,data=ds)
+summary(m2_expcmp)
+
+m2_expcmp_v=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(DV_1:DVCP2CUE_1+DV_2:DVCP2CUE_2+DV_3:DVCP2CUE_3+DV_4:DVCP2CUE_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="valid"))
+summary(m2_expcmp_v)
+
+m2_expcmp_iv=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(DV_1:DVCP2CUE_1+DV_2:DVCP2CUE_2+DV_3:DVCP2CUE_3+DV_4:DVCP2CUE_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="invalid"))
+summary(m2_expcmp_iv)  
+
+#plot 
+plot(allEffects(m2_expcmp_v))       
+
+# Cue-expectancy 
+# DVCP2CUE (0=incongruent 1 = congruent)
+m2_expcmp=glmer(PCARD~1+CUECATb+(DV_1+DV_2+DV_3+DV_4)+(DV_1:DVCP2CUE_1+DV_2:DVCP2CUE_2+DV_3:DVCP2CUE_3+DV_4:DVCP2CUE_4)+(1|SUBID),family=binomial,data=subset(ds,PGROUP==0))
+summary(m2_expcmp)
+plot(allEffects(m2_expcmp)) 
+
+
+#Process5-Plotting-
+#======================================================================================================
+
+#tidyway of formating mixed models for plot 
+tidied_m <- broom.mixed::tidy(m2_expcmp, conf.int = TRUE)
+
+#evidence position
+EVnum<-rep(seq(1,4,1),2);
+#congruency effect distinction
+cond<-c(rep("incongruent",1,4),rep("congruent",1,4));
+#effects for each position separately for congruency(consistant or inconsistant) with cue category, adjust negative values?
+#with adding
+coefs<- unlist(c(tidied_m[3:6,4],tidied_m[3:6,4]+tidied_m[7:10,4]));
+# data frame for plotting, initial plotting wrong or missing something using tidy
+ds_p2 <-
+  data.frame(EVnum=EVnum,
+             cond=cond,
+             Estimate=c(coefs),
+             stderr=tidied_m$std.error[3:10],
+             conf.low = abs(tidied_m$conf.low[3:10]),
+             conf.high =tidied_m$conf.high[3:10])
+
+row.names(ds_p2) <- tidied_m$term[3:10]
+
+ds_p2
 
 ```
 
