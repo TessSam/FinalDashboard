@@ -118,7 +118,22 @@ Column {data-width=650}
 ### 1st Iteration
 
 ```{r}
-
+plot1 <- sumacc %>% 
+  ggplot(aes(CUETYPE, ACC)) +
+  geom_bar(stat = "identity", 
+           fill = "black", 
+           width = 0.6,
+           position = position_dodge()) +
+  geom_errorbar(aes(ymin = ACC - se, 
+                    ymax = ACC + se), 
+                width = 0.2,
+                colour = "grey",
+                position = position_dodge(0.5)) +
+  labs(title = "Mean Accuracy Across Participants for Valid/Invalid Cues", 
+       x = " Expectation Cuetype",
+       y = "Accuracy") +
+  theme_minimal()
+plot1
 ```
 
 Column {data-width=350}
@@ -179,7 +194,8 @@ Column {data-width=650}
 ### 1st Iteration
 
 ```{r}
-
+cor(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
+plot(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
 ```
 
 Column {data-width=350}
