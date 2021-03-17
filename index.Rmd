@@ -132,14 +132,14 @@ trials in which the expectation cue presented before the stream was consistat wi
 its overall identity.  
 
 **1st Iteration:** Constructed using geom_bar() with error bars visualized through
-geom_errorbar().
+geom_errorbar(). Directed towards a scientific audience 
 
 **2nd Iteration:** Constructed using geom_jitter() to replace geom_bar with participant mean
 scores around consistancy conditions. Problems correctly segmenting a bar indicating the mean
 value for each group with geom_hline().
 
 **3rd Iteration:** Correctly implementing segmented group mean bars using annotate() to manually
-place and lable them.
+place and lable them. More visually salient to appeal to a non scientific audience.
  
 
 
@@ -298,10 +298,11 @@ valid trials and lower accuracy during invalid trials (and vice versa).
 **1st Iteration:** Constructed using plot() and indexing valid/invalid rows of dataset. 
 
 **2nd Iteration:** Constructed using ggplot(), geom_point(), and geom_smooth(). Initially
-included very wrong effect size value.
+included very wrong effect size value. Formatting focued towards a scientifc audience.
 
 **3rd Iteration:** Implemented an animated layer of the regression line using bootstrapper().
-Colorblind friendly palatte also implemented alongside minor changes to figure fonts.   
+Colorblind friendly palatte also implemented alongside minor changes to figure fonts. Animation
+and color implemented to appeal to non scientific audiences.  
  
 
 Column {data-width=550}
@@ -455,11 +456,17 @@ expectation cue. Potential missing predictors in model may skew interpreation bu
 effect differences are stronger in position 1. As evidence accumulates, weights of each
 congruency group for each evidence position becomes similar.     
 
-**1st Iteration:** Constructed using ggplot(), geom_line, and geom_point. Used theme to manipulate plot text font and identity. 
+**1st Iteration:** Constructed using ggplot(), geom_line, and geom_point. Used theme to
+manipulate plot text font and identity. Lacking error bars and CIs but aesthetics geared towards
+a schientific audience. 
 
-**2nd Iteration:** Implemented correct mapping of error bars which did not work initially due to data formatting. Potentially(?) colorblind freindly color palette used for congruency category.
+**2nd Iteration:** Implemented correct mapping of error bars which did not work initially due to
+data formatting. Potentially(?) colorblind freindly color palette used for congruency category.
 
-**3rd Iteration:** Failed implimentation of stat_confidence_density() for CI visualization. Defaulted to geom_ribbon to implement hypothetical error bars connecting positions, potentially usefuly for a visualizing experiment using more element positions to track decision weights.     
+**3rd Iteration:** Failed implimentation of stat_confidence_density() for CI visualization.
+Defaulted to geom_ribbon to implement hypothetical error bars connecting positions, potentially
+usefuly for a visualizing experiment using more element positions to track decision weights.
+Color scheme and visualisation geared towards non scientifc audiences.   
 
 
 Column {data-width=550}
